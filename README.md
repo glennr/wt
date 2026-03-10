@@ -77,9 +77,9 @@ wt ls --repo ~/src/myapp       # one project
 Output:
 
 ```
-PROJECT  BRANCH         COMMIT   STATUS  PATH
-myapp    feature-login  a1b2c3d  active  /home/user/worktrees/myapp/feature-login
-api      new-endpoint   e4f5g6h  active  /home/user/worktrees/api/new-endpoint
+PROJECT  BRANCH         COMMIT   MODIFIED     PATH
+myapp    feature-login  a1b2c3d  2 hours ago  /home/user/worktrees/myapp/feature-login
+api      new-endpoint   e4f5g6h  1 day ago    /home/user/worktrees/api/new-endpoint
 ```
 
 ### Get worktree path

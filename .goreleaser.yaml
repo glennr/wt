@@ -28,8 +28,12 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  use: git-cliff
   sort: asc
+  filters:
+    exclude:
+      - "^chore"
+      - "^ci"
+      - "^docs"
 
 release:
   github:
