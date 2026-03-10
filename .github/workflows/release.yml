@@ -28,6 +28,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v7
       - uses: arduino/setup-task@v2
       - run: task ci
 
