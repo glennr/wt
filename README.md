@@ -1,5 +1,8 @@
 # wt — git worktree manager
 
+[![CI](https://github.com/glennr/wt/actions/workflows/release.yml/badge.svg)](https://github.com/glennr/wt/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A transparent wrapper around `git worktree` that adds central worktree storage (`~/worktrees/<project>/<branch>`) and project-specific bootstrap/teardown via `--run`.
 
 ## Install
