@@ -17,24 +17,12 @@ By default, `wt` is installed to `~/.local/bin`. To change the install directory
 INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/glennr/wt/main/install.sh | sh
 ```
 
-Requires Go 1.26+.
+Requires Git 2.5+ (for `git worktree`).
 
 ### Uninstall
 
 ```bash
 rm ~/.local/bin/wt
-```
-
-### Other methods
-
-```bash
-# Go install
-go install github.com/glennr/wt@latest
-
-# From source
-git clone https://github.com/glennr/wt.git
-cd wt
-task install   # builds to ~/.local/bin/wt
 ```
 
 ## Usage
