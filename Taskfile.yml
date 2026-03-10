@@ -1,0 +1,134 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the wt binary
+    cmds:
+      - mkdir -p bin
+      - go build -ldflags "-X github.com/glennr/wt/cmd.Version={{.VERSION}}" -o bin/wt .
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+
+  install:
+    desc: Install wt to ~/.local/bin/ (or INSTALL_DIR)
+    cmds:
+      - INSTALL_DIR={{.INSTALL_DIR | default "${HOME}/.local/bin"}} ./install.sh
+
+  uninstall:
+    desc: Remove wt from ~/.local/bin/ (or INSTALL_DIR)
+    cmds:
+      - rm -f {{.INSTALL_DIR | default "${HOME}/.local/bin"}}/wt
+      - echo "wt removed"
+
+  install-test:
+    desc: Build locally and verify wt in an isolated temp dir
+    cmds:
+      - |
+        set -e
+        TMPDIR=$(mktemp -d)
+        trap 'rm -rf "$TMPDIR"' EXIT
+        go build -ldflags "-X github.com/glennr/wt/cmd.Version={{.VERSION}}" -o "$TMPDIR/wt" .
+        export PATH="$TMPDIR:$PATH"
+        wt --version
+        echo "install-test: OK — $(which wt)"
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  fmt:
+    desc: Auto-fix formatting
+    cmds:
+      - golangci-lint run --fix ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  lint-commits:
+    desc: "Validate commit messages follow Conventional Commits (BASE=main)"
+    vars:
+      BASE: '{{.BASE | default "origin/main"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9_./-]+\))?(!)?: .+'
+        if ! git rev-parse '{{.BASE}}' >/dev/null 2>&1; then
+          echo "lint-commits: base ref '{{.BASE}}' not found, skipping"
+          exit 0
+        fi
+        commits=$(git log --format='%h %s' '{{.BASE}}..HEAD' -- 2>/dev/null) || true
+        if [ -z "$commits" ]; then
+          echo "lint-commits: no commits to check (HEAD is at {{.BASE}})"
+          exit 0
+        fi
+        errors=0
+        while IFS= read -r line; do
+          hash="${line%% *}"
+          subject="${line#* }"
+          if ! printf '%s\n' "$subject" | grep -qE "$pattern"; then
+            echo "BAD  $hash $subject"
+            errors=$((errors + 1))
+          else
+            echo "OK   $hash $subject"
+          fi
+        done <<< "$commits"
+        if [ "$errors" -gt 0 ]; then
+          echo ""
+          echo "ERROR: $errors commit(s) do not follow Conventional Commits."
+          echo "Expected format: <type>[optional scope]: <description>"
+          echo "Valid types: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test"
+          exit 1
+        fi
+        echo ""
+        echo "lint-commits: all commits OK"
+
+  ci:
+    desc: Run all CI checks (test + lint)
+    cmds:
+      - task: test
+      - task: lint
+
+  setup:
+    desc: Configure local dev environment (git hooks, tools)
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks configured."
+
+  changelog:
+    desc: Generate CHANGELOG.md from git history
+    cmds:
+      - git-cliff -o CHANGELOG.md
+
+  release:
+    desc: "Create a release tag and push (usage: task release VERSION=0.2.0)"
+    preconditions:
+      - sh: test -n "{{.VERSION}}"
+        msg: "VERSION required. Usage: task release VERSION=0.2.0"
+      - sh: git diff --quiet && git diff --cached --quiet
+        msg: "Working tree must be clean"
+      - sh: test "$(git branch --show-current)" = "main"
+        msg: "Must be on main branch"
+    cmds:
+      - task: ci
+      - git-cliff --tag "v{{.VERSION}}" -o CHANGELOG.md
+      - git add CHANGELOG.md
+      - 'git commit -m "chore: update changelog for v{{.VERSION}}"'
+      - 'git tag -a "v{{.VERSION}}" -m "Release v{{.VERSION}}"'
+      - git push origin main "v{{.VERSION}}"
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/ dist/
+
+  release-local:
+    desc: Test GoReleaser locally (no publish)
+    cmds:
+      - goreleaser release --snapshot --clean

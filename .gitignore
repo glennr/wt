@@ -1,0 +1,23 @@
+# Build output
+/bin/
+/dist/
+/wt
+
+# Test
+*.test
+*.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+
+# Debug
+__debug_bin*
+
